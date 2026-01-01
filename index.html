@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EverMoment - Digital Souvenir | El Salvador</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Montserrat:wght@400;500;600;700;800&family=Pacifico&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <span class="logo-icon">🌅</span>
+            <span class="logo-text">EverMoment</span>
+        </div>
+        <p class="tagline">Digital Souvenir</p>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        <!-- Upload Section -->
+        <section class="upload-section" id="upload-section">
+            <div class="upload-area" id="upload-area">
+                <span class="material-icons-round upload-icon">add_photo_alternate</span>
+                <p class="upload-title">Sube tu foto</p>
+                <p class="upload-subtitle">Arrastra una imagen o haz clic para seleccionar</p>
+                <button class="upload-btn" id="upload-btn">
+                    <span class="material-icons-round">photo_library</span>
+                    Seleccionar foto
+                </button>
+                <input type="file" id="file-input" accept="image/*">
+            </div>
+        </section>
+
+        <!-- Editor Section -->
+        <section class="editor-section" id="editor-section">
+            <!-- Background Type Toggle -->
+            <p class="section-title">Elige tu fondo</p>
+            <div class="bg-type-toggle">
+                <button class="toggle-btn active" id="toggle-templates" data-type="templates">
+                    <span class="material-icons-round">collections</span>
+                    Plantillas
+                </button>
+                <button class="toggle-btn" id="toggle-custom" data-type="custom">
+                    <span class="material-icons-round">add_photo_alternate</span>
+                    Mi Paisaje
+                </button>
+            </div>
+
+            <!-- Templates Section -->
+            <div class="bg-section" id="templates-section">
+                <div class="backgrounds-carousel-wrapper">
+                    <button class="carousel-btn carousel-prev" id="carousel-prev">
+                        <span class="material-icons-round">chevron_left</span>
+                    </button>
+                    <div class="backgrounds-carousel" id="backgrounds-grid">
+                        <!-- Backgrounds loaded dynamically -->
+                    </div>
+                    <button class="carousel-btn carousel-next" id="carousel-next">
+                        <span class="material-icons-round">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Background Section -->
+            <div class="bg-section hidden" id="custom-bg-section">
+                <div class="custom-bg-upload" id="custom-bg-area">
+                    <div class="custom-bg-preview" id="custom-bg-preview">
+                        <span class="material-icons-round">landscape</span>
+                        <p>Sube tu paisaje</p>
+                    </div>
+                    <button class="upload-bg-btn" id="upload-bg-btn">
+                        <span class="material-icons-round">cloud_upload</span>
+                        Subir Paisaje
+                    </button>
+                    <input type="file" id="upload-bg" accept="image/*">
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="canvas-wrapper">
+                <div class="canvas-container" id="canvas-container">
+                    <canvas id="main-canvas"></canvas>
+                    <div class="canvas-hint" id="canvas-hint">
+                        <span class="material-icons-round">touch_app</span>
+                        Arrastra para posicionar
+                    </div>
+                    <!-- Lock button for mobile -->
+                    <button class="canvas-lock-btn" id="canvas-lock-btn" title="Bloquear/Desbloquear posición">
+                        <span class="material-icons-round" id="lock-icon">lock_open</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <!-- Zoom Control -->
+                <div class="control-group">
+                    <label class="control-label">
+                        <span class="material-icons-round">zoom_in</span>
+                        Tamaño de foto
+                    </label>
+                    <div class="slider-container">
+                        <input type="range" id="zoom-slider" min="0.3" max="2.5" step="0.05" value="1">
+                        <span class="slider-value" id="zoom-value">100%</span>
+                    </div>
+                </div>
+
+                <!-- Image Adjustments -->
+                <div class="control-group">
+                    <label class="control-label">
+                        <span class="material-icons-round">tune</span>
+                        Ajustes de imagen
+                    </label>
+                    <div class="adjustments-grid">
+                        <div class="adjustment-item">
+                            <span class="adjustment-label">Brillo</span>
+                            <input type="range" id="brightness-slider" min="0.5" max="1.5" step="0.05" value="1">
+                            <span class="adjustment-value" id="brightness-value">100%</span>
+                        </div>
+                        <div class="adjustment-item">
+                            <span class="adjustment-label">Contraste</span>
+                            <input type="range" id="contrast-slider" min="0.5" max="1.5" step="0.05" value="1">
+                            <span class="adjustment-value" id="contrast-value">100%</span>
+                        </div>
+                        <div class="adjustment-item">
+                            <span class="adjustment-label">Saturación</span>
+                            <input type="range" id="saturation-slider" min="0" max="2" step="0.05" value="1">
+                            <span class="adjustment-value" id="saturation-value">100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="control-divider"></div>
+
+                <!-- Header Text Section -->
+                <div class="text-section">
+                    <p class="section-subtitle">
+                        <span class="material-icons-round">title</span>
+                        Título Superior (Header)
+                    </p>
+
+                    <div class="control-group">
+                        <input type="text" class="text-input" id="header-text"
+                               placeholder="Ej: Bienvenidos a El Salvador" maxlength="40">
+                    </div>
+
+                    <div class="style-controls">
+                        <div class="style-control">
+                            <label>Fuente</label>
+                            <select id="header-font" class="style-select">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div class="style-control">
+                            <label>Tamaño (px)</label>
+                            <input type="number" id="header-size" class="size-input" min="16" max="120" value="42">
+                        </div>
+                        <div class="style-control">
+                            <label>Color</label>
+                            <div class="color-picker" id="header-colors">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="control-divider"></div>
+
+                <!-- Footer Text Section -->
+                <div class="text-section">
+                    <p class="section-subtitle">
+                        <span class="material-icons-round">subtitles</span>
+                        Título Inferior (Footer)
+                    </p>
+
+                    <div class="control-group">
+                        <input type="text" class="text-input" id="footer-text"
+                               placeholder="Ej: Familia García - 2025" maxlength="40">
+                    </div>
+
+                    <div class="style-controls">
+                        <div class="style-control">
+                            <label>Fuente</label>
+                            <select id="footer-font" class="style-select">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div class="style-control">
+                            <label>Tamaño (px)</label>
+                            <input type="number" id="footer-size" class="size-input" min="16" max="120" value="42">
+                        </div>
+                        <div class="style-control">
+                            <label>Color</label>
+                            <div class="color-picker" id="footer-colors">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="control-divider"></div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="reset-btn">
+                        <span class="material-icons-round">refresh</span>
+                        Reiniciar
+                    </button>
+                    <button class="btn btn-primary" id="download-btn">
+                        <span class="material-icons-round">download</span>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Processing Overlay -->
+    <div class="processing-overlay" id="processing-overlay">
+        <div class="spinner"></div>
+        <p class="processing-text">Procesando tu imagen...</p>
+        <p class="processing-subtext">Nuestra IA está removiendo el fondo</p>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span class="material-icons-round" id="toast-icon">info</span>
+        <span class="toast-message" id="toast-message"></span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2025 EverMoment - Recuerdos digitales de El Salvador</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
