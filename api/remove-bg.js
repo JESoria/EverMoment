@@ -12,13 +12,6 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const fs = require('fs');
 
-// Deshabilitar body parser de Vercel para manejar FormData
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
-
 module.exports = async (req, res) => {
     // Solo permitir POST
     if (req.method !== 'POST') {
@@ -110,4 +103,11 @@ module.exports = async (req, res) => {
             error: 'Error interno del servidor'
         });
     }
+};
+
+// Configuración para Vercel - deshabilitar body parser
+module.exports.config = {
+    api: {
+        bodyParser: false,
+    },
 };

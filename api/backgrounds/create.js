@@ -13,13 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const { verifyAdmin, sendAuthError, supabaseAdmin } = require('../middleware/auth');
 
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
-
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
     // Solo permitir POST
     if (req.method !== 'POST') {
         return res.status(405).json({
@@ -149,4 +143,11 @@ module.exports = async (req, res) => {
             error: 'Error interno del servidor'
         });
     }
+};
+
+module.exports = handler;
+module.exports.config = {
+    api: {
+        bodyParser: false,
+    },
 };
