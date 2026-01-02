@@ -12,7 +12,7 @@ const SUPABASE_CONFIG = {
 };
 
 // Inicializar cliente Supabase
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
     SUPABASE_CONFIG.url,
     SUPABASE_CONFIG.anonKey
 );
@@ -22,7 +22,7 @@ const supabase = window.supabase.createClient(
  * @returns {Promise<Object|null>} Sesión del usuario o null
  */
 async function getSession() {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error) {
         console.error('Error getting session:', error);
         return null;
@@ -35,7 +35,7 @@ async function getSession() {
  * @returns {Promise<Object|null>} Usuario actual o null
  */
 async function getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await supabaseClient.auth.getUser();
     if (error) {
         console.error('Error getting user:', error);
         return null;
@@ -51,7 +51,7 @@ async function getUserProfile() {
     const user = await getCurrentUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', user.id)
@@ -80,7 +80,7 @@ async function isAdmin() {
  * @returns {Promise<Object>} { user, error }
  */
 async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password
     });
@@ -97,7 +97,7 @@ async function signIn(email, password) {
  * @returns {Promise<Object>} { error }
  */
 async function signOut() {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabaseClient.auth.signOut();
     return { error };
 }
 
@@ -112,7 +112,7 @@ async function getAccessToken() {
 
 // Exportar para uso global
 window.SupabaseClient = {
-    supabase,
+    supabase: supabaseClient,
     getSession,
     getCurrentUser,
     getUserProfile,
