@@ -59,7 +59,7 @@
                 const isAdmin = await SupabaseClient.isAdmin();
 
                 if (isAdmin) {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = '/admin/dashboard.html';
                     return;
                 } else {
                     // No es admin, cerrar sesión
@@ -119,7 +119,7 @@
             }
 
             // Redirigir al dashboard
-            window.location.href = 'dashboard.html';
+            window.location.href = '/admin/dashboard.html';
 
         } catch (error) {
             console.error('Login error:', error);
