@@ -7,10 +7,42 @@
  * Body: FormData con 'image_file'
  */
 
-const formidable = require('formidable');
+const Busboy = require('busboy');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
-const fs = require('fs');
+
+// Parsear multipart form data con busboy
+function parseMultipart(req) {
+    return new Promise((resolve, reject) => {
+        const busboy = Busboy({ headers: req.headers });
+        const files = [];
+        const fields = {};
+
+        busboy.on('file', (fieldname, file, info) => {
+            const { filename, mimeType } = info;
+            const chunks = [];
+
+            file.on('data', (chunk) => chunks.push(chunk));
+            file.on('end', () => {
+                files.push({
+                    fieldname,
+                    filename,
+                    mimeType,
+                    buffer: Buffer.concat(chunks)
+                });
+            });
+        });
+
+        busboy.on('field', (fieldname, value) => {
+            fields[fieldname] = value;
+        });
+
+        busboy.on('finish', () => resolve({ files, fields }));
+        busboy.on('error', reject);
+
+        req.pipe(busboy);
+    });
+}
 
 module.exports = async (req, res) => {
     // Solo permitir POST
@@ -33,14 +65,10 @@ module.exports = async (req, res) => {
 
     try {
         // Parsear FormData entrante
-        const form = formidable({
-            maxFileSize: 10 * 1024 * 1024, // 10MB
-        });
+        const { files } = await parseMultipart(req);
 
-        const [fields, files] = await form.parse(req);
-
-        // Obtener archivo
-        const imageFile = files.image_file?.[0];
+        // Buscar el archivo de imagen
+        const imageFile = files.find(f => f.fieldname === 'image_file');
         if (!imageFile) {
             return res.status(400).json({
                 success: false,
@@ -50,9 +78,9 @@ module.exports = async (req, res) => {
 
         // Crear FormData para Photoroom
         const formData = new FormData();
-        formData.append('image_file', fs.createReadStream(imageFile.filepath), {
-            filename: imageFile.originalFilename,
-            contentType: imageFile.mimetype,
+        formData.append('image_file', imageFile.buffer, {
+            filename: imageFile.filename,
+            contentType: imageFile.mimeType,
         });
 
         // Llamar a Photoroom API
@@ -64,9 +92,6 @@ module.exports = async (req, res) => {
             },
             body: formData,
         });
-
-        // Limpiar archivo temporal
-        fs.unlink(imageFile.filepath, () => {});
 
         // Manejar errores de Photoroom
         if (!response.ok) {
@@ -105,7 +130,6 @@ module.exports = async (req, res) => {
     }
 };
 
-// Configuración para Vercel - deshabilitar body parser
 module.exports.config = {
     api: {
         bodyParser: false,

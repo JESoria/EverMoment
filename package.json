@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
-    "formidable": "^3.5.1",
+    "busboy": "^1.6.0",
     "node-fetch": "^2.7.0",
     "form-data": "^4.0.0"
   }

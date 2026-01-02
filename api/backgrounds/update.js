@@ -8,10 +8,59 @@
  * Body: JSON { name, active, display_order } o FormData con 'image'
  */
 
-const formidable = require('formidable');
-const fs = require('fs');
+const Busboy = require('busboy');
 const path = require('path');
 const { verifyAdmin, sendAuthError, supabaseAdmin } = require('../middleware/auth');
+
+// Parsear multipart form data con busboy
+function parseMultipart(req) {
+    return new Promise((resolve, reject) => {
+        const busboy = Busboy({ headers: req.headers });
+        const files = [];
+        const fields = {};
+
+        busboy.on('file', (fieldname, file, info) => {
+            const { filename, mimeType } = info;
+            const chunks = [];
+
+            file.on('data', (chunk) => chunks.push(chunk));
+            file.on('end', () => {
+                files.push({
+                    fieldname,
+                    filename,
+                    mimeType,
+                    buffer: Buffer.concat(chunks)
+                });
+            });
+        });
+
+        busboy.on('field', (fieldname, value) => {
+            fields[fieldname] = value;
+        });
+
+        busboy.on('finish', () => resolve({ files, fields }));
+        busboy.on('error', reject);
+
+        req.pipe(busboy);
+    });
+}
+
+// Parsear JSON del body
+function parseJSON(req) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        req.on('data', chunk => chunks.push(chunk));
+        req.on('end', () => {
+            try {
+                const body = JSON.parse(Buffer.concat(chunks).toString() || '{}');
+                resolve(body);
+            } catch (e) {
+                resolve({});
+            }
+        });
+        req.on('error', reject);
+    });
+}
 
 const handler = async (req, res) => {
     // Solo permitir PUT
@@ -60,24 +109,16 @@ const handler = async (req, res) => {
 
         if (contentType.includes('multipart/form-data')) {
             // FormData (puede incluir nueva imagen)
-            const form = formidable({
-                maxFileSize: 5 * 1024 * 1024,
-            });
+            const { files, fields } = await parseMultipart(req);
 
-            const [fields, files] = await form.parse(req);
+            if (fields.name) updateData.name = fields.name.trim();
+            if (fields.active !== undefined) updateData.active = fields.active === 'true';
+            if (fields.display_order) updateData.display_order = parseInt(fields.display_order);
 
-            if (fields.name?.[0]) updateData.name = fields.name[0].trim();
-            if (fields.active?.[0] !== undefined) updateData.active = fields.active[0] === 'true';
-            if (fields.display_order?.[0]) updateData.display_order = parseInt(fields.display_order[0]);
-
-            newImageFile = files.image?.[0];
+            newImageFile = files.find(f => f.fieldname === 'image');
         } else {
             // JSON
-            const chunks = [];
-            for await (const chunk of req) {
-                chunks.push(chunk);
-            }
-            const body = JSON.parse(Buffer.concat(chunks).toString());
+            const body = await parseJSON(req);
 
             if (body.name !== undefined) updateData.name = body.name.trim();
             if (body.active !== undefined) updateData.active = body.active;
@@ -88,7 +129,7 @@ const handler = async (req, res) => {
         if (newImageFile) {
             // Validar tipo
             const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!allowedTypes.includes(newImageFile.mimetype)) {
+            if (!allowedTypes.includes(newImageFile.mimeType)) {
                 return res.status(400).json({
                     success: false,
                     error: 'Formato de imagen no válido'
@@ -96,22 +137,18 @@ const handler = async (req, res) => {
             }
 
             // Generar nuevo nombre
-            const ext = path.extname(newImageFile.originalFilename) || '.jpg';
+            const ext = path.extname(newImageFile.filename) || '.jpg';
             const fileName = `bg_${Date.now()}${ext}`;
             const filePath = `backgrounds/${fileName}`;
 
-            // Leer y subir
-            const fileBuffer = fs.readFileSync(newImageFile.filepath);
-
+            // Subir a Storage
             const { error: uploadError } = await supabaseAdmin
                 .storage
                 .from('backgrounds')
-                .upload(filePath, fileBuffer, {
-                    contentType: newImageFile.mimetype,
+                .upload(filePath, newImageFile.buffer, {
+                    contentType: newImageFile.mimeType,
                     upsert: false
                 });
-
-            fs.unlink(newImageFile.filepath, () => {});
 
             if (uploadError) {
                 console.error('Storage upload error:', uploadError);

@@ -8,10 +8,42 @@
  * Body: FormData con 'name' y 'image'
  */
 
-const formidable = require('formidable');
-const fs = require('fs');
+const Busboy = require('busboy');
 const path = require('path');
 const { verifyAdmin, sendAuthError, supabaseAdmin } = require('../middleware/auth');
+
+// Parsear multipart form data con busboy
+function parseMultipart(req) {
+    return new Promise((resolve, reject) => {
+        const busboy = Busboy({ headers: req.headers });
+        const files = [];
+        const fields = {};
+
+        busboy.on('file', (fieldname, file, info) => {
+            const { filename, mimeType } = info;
+            const chunks = [];
+
+            file.on('data', (chunk) => chunks.push(chunk));
+            file.on('end', () => {
+                files.push({
+                    fieldname,
+                    filename,
+                    mimeType,
+                    buffer: Buffer.concat(chunks)
+                });
+            });
+        });
+
+        busboy.on('field', (fieldname, value) => {
+            fields[fieldname] = value;
+        });
+
+        busboy.on('finish', () => resolve({ files, fields }));
+        busboy.on('error', reject);
+
+        req.pipe(busboy);
+    });
+}
 
 const handler = async (req, res) => {
     // Solo permitir POST
@@ -30,15 +62,11 @@ const handler = async (req, res) => {
 
     try {
         // Parsear FormData
-        const form = formidable({
-            maxFileSize: 5 * 1024 * 1024, // 5MB
-        });
-
-        const [fields, files] = await form.parse(req);
+        const { files, fields } = await parseMultipart(req);
 
         // Validar campos
-        const name = fields.name?.[0];
-        const imageFile = files.image?.[0];
+        const name = fields.name;
+        const imageFile = files.find(f => f.fieldname === 'image');
 
         if (!name || !name.trim()) {
             return res.status(400).json({
@@ -56,7 +84,7 @@ const handler = async (req, res) => {
 
         // Validar tipo de archivo
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowedTypes.includes(imageFile.mimetype)) {
+        if (!allowedTypes.includes(imageFile.mimeType)) {
             return res.status(400).json({
                 success: false,
                 error: 'Formato de imagen no válido. Use JPG, PNG o WebP.'
@@ -64,24 +92,18 @@ const handler = async (req, res) => {
         }
 
         // Generar nombre único para el archivo
-        const ext = path.extname(imageFile.originalFilename) || '.jpg';
+        const ext = path.extname(imageFile.filename) || '.jpg';
         const fileName = `bg_${Date.now()}${ext}`;
         const filePath = `backgrounds/${fileName}`;
-
-        // Leer archivo
-        const fileBuffer = fs.readFileSync(imageFile.filepath);
 
         // Subir a Supabase Storage
         const { error: uploadError } = await supabaseAdmin
             .storage
             .from('backgrounds')
-            .upload(filePath, fileBuffer, {
-                contentType: imageFile.mimetype,
+            .upload(filePath, imageFile.buffer, {
+                contentType: imageFile.mimeType,
                 upsert: false
             });
-
-        // Limpiar archivo temporal
-        fs.unlink(imageFile.filepath, () => {});
 
         if (uploadError) {
             console.error('Storage upload error:', uploadError);
@@ -115,7 +137,7 @@ const handler = async (req, res) => {
                 name: name.trim(),
                 file_path: filePath,
                 file_url: fileUrl,
-                active: true,
+                active: fields.active !== 'false',
                 display_order: nextOrder
             })
             .select()
