@@ -1,0 +1,152 @@
+/**
+ * ===========================================
+ * EverMoment - API: Crear Background
+ * Endpoint admin para crear nuevo fondo
+ * ===========================================
+ * POST /api/backgrounds/create
+ * Headers: Authorization: Bearer <token>
+ * Body: FormData con 'name' y 'image'
+ */
+
+const formidable = require('formidable');
+const fs = require('fs');
+const path = require('path');
+const { verifyAdmin, sendAuthError, supabaseAdmin } = require('../middleware/auth');
+
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
+
+module.exports = async (req, res) => {
+    // Solo permitir POST
+    if (req.method !== 'POST') {
+        return res.status(405).json({
+            success: false,
+            error: 'Método no permitido'
+        });
+    }
+
+    // Verificar admin
+    const { error: authError } = await verifyAdmin(req);
+    if (authError) {
+        return sendAuthError(res, authError);
+    }
+
+    try {
+        // Parsear FormData
+        const form = formidable({
+            maxFileSize: 5 * 1024 * 1024, // 5MB
+        });
+
+        const [fields, files] = await form.parse(req);
+
+        // Validar campos
+        const name = fields.name?.[0];
+        const imageFile = files.image?.[0];
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: 'El nombre es requerido'
+            });
+        }
+
+        if (!imageFile) {
+            return res.status(400).json({
+                success: false,
+                error: 'La imagen es requerida'
+            });
+        }
+
+        // Validar tipo de archivo
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(imageFile.mimetype)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Formato de imagen no válido. Use JPG, PNG o WebP.'
+            });
+        }
+
+        // Generar nombre único para el archivo
+        const ext = path.extname(imageFile.originalFilename) || '.jpg';
+        const fileName = `bg_${Date.now()}${ext}`;
+        const filePath = `backgrounds/${fileName}`;
+
+        // Leer archivo
+        const fileBuffer = fs.readFileSync(imageFile.filepath);
+
+        // Subir a Supabase Storage
+        const { error: uploadError } = await supabaseAdmin
+            .storage
+            .from('backgrounds')
+            .upload(filePath, fileBuffer, {
+                contentType: imageFile.mimetype,
+                upsert: false
+            });
+
+        // Limpiar archivo temporal
+        fs.unlink(imageFile.filepath, () => {});
+
+        if (uploadError) {
+            console.error('Storage upload error:', uploadError);
+            return res.status(500).json({
+                success: false,
+                error: 'Error al subir imagen'
+            });
+        }
+
+        // Obtener URL pública
+        const { data: urlData } = supabaseAdmin
+            .storage
+            .from('backgrounds')
+            .getPublicUrl(filePath);
+
+        const fileUrl = urlData.publicUrl;
+
+        // Obtener el mayor display_order actual
+        const { data: maxOrderData } = await supabaseAdmin
+            .from('backgrounds')
+            .select('display_order')
+            .order('display_order', { ascending: false })
+            .limit(1);
+
+        const nextOrder = (maxOrderData?.[0]?.display_order || 0) + 1;
+
+        // Insertar en base de datos
+        const { data: background, error: dbError } = await supabaseAdmin
+            .from('backgrounds')
+            .insert({
+                name: name.trim(),
+                file_path: filePath,
+                file_url: fileUrl,
+                active: true,
+                display_order: nextOrder
+            })
+            .select()
+            .single();
+
+        if (dbError) {
+            console.error('Database insert error:', dbError);
+            // Intentar eliminar archivo subido
+            await supabaseAdmin.storage.from('backgrounds').remove([filePath]);
+            return res.status(500).json({
+                success: false,
+                error: 'Error al guardar en base de datos'
+            });
+        }
+
+        res.status(201).json({
+            success: true,
+            data: background
+        });
+
+    } catch (error) {
+        console.error('Create background error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error interno del servidor'
+        });
+    }
+};

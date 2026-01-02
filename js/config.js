@@ -6,11 +6,6 @@
  */
 
 // ============================================
-// API KEY - PEGA TU API KEY DE PHOTOROOM AQUÍ
-// ============================================
-const PHOTOROOM_API_KEY = 'sk_pr_evermoment_4ce823c496a6dac232d52777c93c1f35a07e105f';
-
-// ============================================
 // CONFIGURACIÓN GENERAL
 // ============================================
 const CONFIG = {
@@ -41,11 +36,6 @@ const CONFIG = {
         subFont: '20px Montserrat, sans-serif'
     },
 
-    // Ruta de la carpeta de fondos
-    backgroundsPath: 'assets/backgrounds/',
-    backgroundsExtensions: ['.jpg', '.png', '.webp'],  // Extensiones a buscar (en orden de prioridad)
-    backgroundsMaxScan: 50,                            // Máximo de imágenes a buscar
-
     // Fuentes disponibles para textos personalizados
     fonts: [
         { id: 'playfair', name: 'Playfair Display', family: 'Playfair Display, serif' },
@@ -73,23 +63,13 @@ const CONFIG = {
         { id: 'red', name: 'Rojo', color: '#DC3545' }
     ],
 
-    // API de Photoroom
+    // API endpoints (backend en Vercel)
     api: {
-        endpoint: 'https://sdk.photoroom.com/v1/segment',
+        removeBg: '/api/remove-bg',
+        backgrounds: '/api/backgrounds/list',
         maxFileSize: 10 * 1024 * 1024 // 10MB
     }
 };
-
-// ============================================
-// UTILIDAD: Convertir nombre de archivo a título
-// "playa-el-tunco.jpg" → "Playa El Tunco"
-// ============================================
-function filenameToTitle(filename) {
-    return filename
-        .replace(/\.[^/.]+$/, '')           // Quitar extensión
-        .replace(/[-_]/g, ' ')              // Guiones/underscores a espacios
-        .replace(/\b\w/g, c => c.toUpperCase()); // Capitalizar palabras
-}
 
 // Congelar configuración
 Object.freeze(CONFIG);

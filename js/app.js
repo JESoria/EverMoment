@@ -333,13 +333,9 @@
     }
 
     /* ===========================================
-       API: Procesar imagen con Photoroom
+       API: Procesar imagen con Photoroom (via proxy)
        =========================================== */
     async function processPhoto(file) {
-        if (!PHOTOROOM_API_KEY || PHOTOROOM_API_KEY === 'TU_KEY_AQUI') {
-            throw new Error('API Key no configurada. Abre js/config.js y pega tu API Key de Photoroom.');
-        }
-
         if (!file || !file.type.startsWith('image/')) {
             throw new Error('Por favor, selecciona un archivo de imagen válido.');
         }
@@ -352,26 +348,14 @@
         formData.append('image_file', file);
 
         try {
-            const response = await fetch(CONFIG.api.endpoint, {
+            const response = await fetch(CONFIG.api.removeBg, {
                 method: 'POST',
-                headers: {
-                    'x-api-key': PHOTOROOM_API_KEY
-                },
                 body: formData
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-
-                if (response.status === 401) {
-                    throw new Error('API Key inválida. Verifica tu clave de Photoroom.');
-                } else if (response.status === 402) {
-                    throw new Error('Créditos agotados en tu cuenta de Photoroom.');
-                } else if (response.status === 429) {
-                    throw new Error('Demasiadas solicitudes. Espera un momento.');
-                }
-
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+                throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
             }
 
             const processedBlob = await response.blob();
@@ -441,65 +425,27 @@
     }
 
     /* ===========================================
-       FONDOS: Cargar dinámicamente (imágenes numeradas)
+       FONDOS: Cargar desde API
        =========================================== */
 
     /**
-     * Verificar si una imagen existe
-     */
-    function imageExists(url) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve(true);
-            img.onerror = () => resolve(false);
-            img.src = url;
-        });
-    }
-
-    /**
-     * Buscar imagen con cualquier extensión soportada
-     * Retorna la URL si existe, null si no
-     */
-    async function findImageWithExtensions(number) {
-        for (const ext of CONFIG.backgroundsExtensions) {
-            const filename = `${number}${ext}`;
-            const url = CONFIG.backgroundsPath + filename;
-
-            if (await imageExists(url)) {
-                return { filename, url };
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Cargar lista de fondos automáticamente
-     * Busca imágenes numeradas: 1.jpg, 1.png, 2.jpg, 2.png...
-     * Las nombra como "Fondo 1", "Fondo 2", etc.
+     * Cargar lista de fondos desde la API
      */
     async function loadBackgroundsList() {
         try {
-            const backgrounds = [];
+            const response = await fetch(CONFIG.api.backgrounds);
 
-            // Escanear imágenes numeradas secuencialmente
-            for (let i = 1; i <= CONFIG.backgroundsMaxScan; i++) {
-                const found = await findImageWithExtensions(i);
-
-                if (!found) {
-                    // Si no existe con ninguna extensión, dejamos de buscar
-                    break;
-                }
-
-                backgrounds.push({
-                    id: `fondo-${i}`,
-                    name: `Fondo ${i}`,
-                    filename: found.filename,
-                    url: found.url,
-                    thumbnail: found.url
-                });
+            if (!response.ok) {
+                throw new Error('Error al cargar fondos');
             }
 
-            state.backgrounds = backgrounds;
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Error al cargar fondos');
+            }
+
+            state.backgrounds = result.data || [];
             return state.backgrounds;
 
         } catch (error) {
@@ -515,7 +461,7 @@
     async function initBackgrounds() {
         elements.backgroundsGrid.innerHTML = '<p style="text-align:center;color:#666;grid-column:1/-1;">Cargando fondos...</p>';
 
-        // Cargar lista de fondos desde JSON
+        // Cargar lista de fondos desde API
         const backgrounds = await loadBackgroundsList();
 
         if (backgrounds.length === 0) {
@@ -530,7 +476,7 @@
             option.className = 'bg-option' + (index === 0 ? ' selected' : '');
             option.dataset.id = bg.id;
             option.innerHTML = `
-                <img src="${bg.thumbnail}" alt="${bg.name}" loading="lazy"
+                <img src="${bg.thumbnail || bg.url}" alt="${bg.name}" loading="lazy"
                      onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 125%22%3E%3Crect fill=%22%23003366%22 width=%22100%22 height=%22125%22/%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%228%22%3E${encodeURIComponent(bg.name)}%3C/text%3E%3C/svg%3E'">
                 <span class="bg-name">${bg.name}</span>
             `;
@@ -546,7 +492,7 @@
     }
 
     /**
-     * Seleccionar fondo (soporta URLs locales y externas)
+     * Seleccionar fondo
      */
     async function selectBackground(id) {
         const bg = state.backgrounds.find(b => b.id === id);
@@ -562,7 +508,7 @@
             render();
         } catch (error) {
             console.error('Error loading background:', error);
-            showToast('Error al cargar el fondo. Verifica que la imagen existe.', 'error');
+            showToast('Error al cargar el fondo.', 'error');
         }
     }
 

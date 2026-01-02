@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - EverMoment Admin</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" id="mobile-menu-btn">
+        <span class="material-icons-round">menu</span>
+    </button>
+
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="sidebar-logo">
+                    <span class="sidebar-logo-icon">🌅</span>
+                    <span class="sidebar-logo-text">EverMoment</span>
+                </a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span class="material-icons-round">dashboard</span>
+                    Dashboard
+                </a>
+                <a href="backgrounds.html" class="nav-item">
+                    <span class="material-icons-round">collections</span>
+                    Fondos
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Administrador</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                </div>
+                <button class="btn logout-btn" id="logout-btn">
+                    <span class="material-icons-round">logout</span>
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">Dashboard</h1>
+                <p class="page-subtitle">Bienvenido al panel de administración de EverMoment</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon primary">
+                        <span class="material-icons-round">collections</span>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-backgrounds">-</div>
+                        <div class="stat-label">Total Fondos</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon success">
+                        <span class="material-icons-round">visibility</span>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="active-backgrounds">-</div>
+                        <div class="stat-label">Fondos Activos</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <span class="material-icons-round">visibility_off</span>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="inactive-backgrounds">-</div>
+                        <div class="stat-label">Fondos Inactivos</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Acciones Rápidas</h2>
+                </div>
+                <div class="card-body" style="padding: 24px;">
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <a href="backgrounds.html" class="btn btn-primary">
+                            <span class="material-icons-round">add_photo_alternate</span>
+                            Agregar Fondo
+                        </a>
+                        <a href="../index.html" target="_blank" class="btn btn-secondary">
+                            <span class="material-icons-round">open_in_new</span>
+                            Ver App Pública
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span class="material-icons-round" id="toast-icon">info</span>
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/supabase.js"></script>
+    <script src="../js/admin/dashboard.js"></script>
+</body>
+</html>
