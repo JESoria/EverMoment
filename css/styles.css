@@ -525,29 +525,42 @@ body {
     display: none;
 }
 
+/* MD3 Icon Button for Carousel */
 .carousel-btn {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--white);
-    border: 2px solid var(--gray-100);
-    color: var(--azul-anil);
+    width: 40px;
+    height: 40px;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    color: var(--md-sys-color-on-surface);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10;
-    box-shadow: var(--shadow-md);
-    transition: var(--transition-fast);
+    box-shadow: var(--md-sys-elevation-level1);
+    transition: box-shadow var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard),
+                background var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+    padding: 0;
+}
+
+/* Ensure icon stays centered */
+.carousel-btn .material-icons-round {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
 }
 
 .carousel-btn:hover {
-    background: var(--azul-anil);
-    color: var(--white);
-    border-color: var(--azul-anil);
+    background: var(--md-sys-color-surface-container-highest);
+    box-shadow: var(--md-sys-elevation-level2);
+}
+
+.carousel-btn:active {
+    background: var(--md-sys-color-surface-container-high);
 }
 
 .carousel-prev {

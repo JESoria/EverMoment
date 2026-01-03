@@ -4,10 +4,23 @@
  * ===========================================
  */
 
-/* Ripple container setup */
+/* Ripple container setup - only add if not already positioned */
 .ripple-container {
-    position: relative;
     overflow: hidden;
+}
+
+/* Ensure buttons with ripple maintain their layout */
+.btn.ripple-container,
+.carousel-btn.ripple-container,
+.toggle-btn.ripple-container,
+.nav-item.ripple-container {
+    /* These already have their own positioning */
+}
+
+/* Ensure icons inside buttons stay on top */
+.ripple-container > .material-icons-round {
+    position: relative;
+    z-index: 1;
 }
 
 /* The ripple element */
